@@ -408,6 +408,28 @@ const filterNotes = async (req, res) => {
   }
 };
 
+const getPinnedNotes = async (req, res) => {
+  try {
+    const filter = { isPinned: true };
+
+    if (req.query.category) {
+      if (!validateOptionalCategory(req.query.category, res)) {
+        return;
+      }
+
+      filter.category = req.query.category;
+    }
+
+    const notes = await Note.find(filter).sort({ createdAt: -1 });
+
+    return sendSuccess(res, 200, "Pinned notes fetched successfully", notes, {
+      count: notes.length,
+    });
+  } catch (error) {
+    return handleServerError(res, error);
+  }
+};
+
 module.exports = {
   createNote,
   createBulkNotes,
@@ -421,4 +443,5 @@ module.exports = {
   getNotesByStatus,
   getNoteSummary,
   filterNotes,
+  getPinnedNotes,
 };
