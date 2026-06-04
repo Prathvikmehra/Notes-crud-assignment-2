@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Note = require("../models/note.model");
 
 const ALLOWED_CATEGORIES = ["work", "personal", "study"];
@@ -45,6 +46,8 @@ const validateOptionalCategory = (category, res) => {
 
   return true;
 };
+
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 const createNote = async (req, res) => {
   try {
@@ -128,8 +131,29 @@ const getAllNotes = async (_req, res) => {
   }
 };
 
+const getNoteById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return sendError(res, 400, "Invalid note ID");
+    }
+
+    const note = await Note.findById(id);
+
+    if (!note) {
+      return sendError(res, 404, "Note not found");
+    }
+
+    return sendSuccess(res, 200, "Note fetched successfully", note);
+  } catch (error) {
+    return handleServerError(res, error);
+  }
+};
+
 module.exports = {
   createNote,
   createBulkNotes,
   getAllNotes,
+  getNoteById,
 };
