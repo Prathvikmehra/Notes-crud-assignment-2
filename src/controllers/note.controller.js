@@ -151,9 +151,50 @@ const getNoteById = async (req, res) => {
   }
 };
 
+const replaceNote = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, content } = req.body;
+
+    if (!isValidObjectId(id)) {
+      return sendError(res, 400, "Invalid note ID");
+    }
+
+    if (!validateRequiredNoteFields(title, content, res)) {
+      return;
+    }
+
+    if (!validateOptionalCategory(req.body.category, res)) {
+      return;
+    }
+
+    const replacement = {
+      title: getSanitizedText(title),
+      content: getSanitizedText(content),
+      category: req.body.category ?? "personal",
+      isPinned: req.body.isPinned ?? false,
+    };
+
+    const result = await Note.replaceOne({ _id: id }, replacement, {
+      runValidators: true,
+    });
+
+    if (result.matchedCount === 0) {
+      return sendError(res, 404, "Note not found");
+    }
+
+    const updatedNote = await Note.findById(id);
+
+    return sendSuccess(res, 200, "Note replaced successfully", updatedNote);
+  } catch (error) {
+    return handleServerError(res, error);
+  }
+};
+
 module.exports = {
   createNote,
   createBulkNotes,
   getAllNotes,
   getNoteById,
+  replaceNote,
 };
