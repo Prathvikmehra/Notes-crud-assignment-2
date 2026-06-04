@@ -356,6 +356,26 @@ const getNotesByStatus = async (req, res) => {
   }
 };
 
+const getNoteSummary = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return sendError(res, 400, "Invalid note ID");
+    }
+
+    const note = await Note.findById(id).select("title category isPinned createdAt");
+
+    if (!note) {
+      return sendError(res, 404, "Note not found");
+    }
+
+    return sendSuccess(res, 200, "Note summary fetched successfully", note);
+  } catch (error) {
+    return handleServerError(res, error);
+  }
+};
+
 module.exports = {
   createNote,
   createBulkNotes,
@@ -367,4 +387,5 @@ module.exports = {
   deleteBulkNotes,
   getNotesByCategory,
   getNotesByStatus,
+  getNoteSummary,
 };
