@@ -430,6 +430,32 @@ const getPinnedNotes = async (req, res) => {
   }
 };
 
+const filterByCategory = async (req, res) => {
+  try {
+    const { name } = req.query;
+
+    if (!name) {
+      return sendError(res, 400, "Query param 'name' is required");
+    }
+
+    if (!validateOptionalCategory(name, res)) {
+      return;
+    }
+
+    const notes = await Note.find({ category: name }).sort({ createdAt: -1 });
+
+    return sendSuccess(
+      res,
+      200,
+      `Notes filtered by category: ${name}`,
+      notes,
+      { count: notes.length }
+    );
+  } catch (error) {
+    return handleServerError(res, error);
+  }
+};
+
 module.exports = {
   createNote,
   createBulkNotes,
@@ -444,4 +470,5 @@ module.exports = {
   getNoteSummary,
   filterNotes,
   getPinnedNotes,
+  filterByCategory,
 };
