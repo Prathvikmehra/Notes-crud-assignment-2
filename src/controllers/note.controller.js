@@ -191,10 +191,70 @@ const replaceNote = async (req, res) => {
   }
 };
 
+const updateNote = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const allowedUpdates = ["title", "content", "category", "isPinned"];
+    const updateKeys = Object.keys(req.body).filter((key) =>
+      allowedUpdates.includes(key)
+    );
+
+    if (!isValidObjectId(id)) {
+      return sendError(res, 400, "Invalid note ID");
+    }
+
+    if (updateKeys.length === 0) {
+      return sendError(res, 400, "No fields provided to update");
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(req.body, "title") &&
+      !getSanitizedText(req.body.title)
+    ) {
+      return sendError(res, 400, "Title is required");
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(req.body, "content") &&
+      !getSanitizedText(req.body.content)
+    ) {
+      return sendError(res, 400, "Content is required");
+    }
+
+    if (!validateOptionalCategory(req.body.category, res)) {
+      return;
+    }
+
+    const updates = {};
+
+    for (const key of updateKeys) {
+      if (key === "title" || key === "content") {
+        updates[key] = getSanitizedText(req.body[key]);
+      } else {
+        updates[key] = req.body[key];
+      }
+    }
+
+    const updatedNote = await Note.findByIdAndUpdate(id, updates, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updatedNote) {
+      return sendError(res, 404, "Note not found");
+    }
+
+    return sendSuccess(res, 200, "Note updated successfully", updatedNote);
+  } catch (error) {
+    return handleServerError(res, error);
+  }
+};
+
 module.exports = {
   createNote,
   createBulkNotes,
   getAllNotes,
   getNoteById,
   replaceNote,
+  updateNote,
 };
