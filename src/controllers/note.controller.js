@@ -270,6 +270,33 @@ const deleteNote = async (req, res) => {
   }
 };
 
+const deleteBulkNotes = async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return sendError(res, 400, "ids array is required and cannot be empty");
+    }
+
+    const hasInvalidId = ids.some((id) => !isValidObjectId(id));
+
+    if (hasInvalidId) {
+      return sendError(res, 400, "All ids must be valid note IDs");
+    }
+
+    const result = await Note.deleteMany({ _id: { $in: ids } });
+
+    return sendSuccess(
+      res,
+      200,
+      `${result.deletedCount} notes deleted successfully`,
+      null
+    );
+  } catch (error) {
+    return handleServerError(res, error);
+  }
+};
+
 module.exports = {
   createNote,
   createBulkNotes,
@@ -278,4 +305,5 @@ module.exports = {
   replaceNote,
   updateNote,
   deleteNote,
+  deleteBulkNotes,
 };
