@@ -376,6 +376,38 @@ const getNoteSummary = async (req, res) => {
   }
 };
 
+const filterNotes = async (req, res) => {
+  try {
+    const filter = {};
+
+    if (req.query.category) {
+      if (!validateOptionalCategory(req.query.category, res)) {
+        return;
+      }
+
+      filter.category = req.query.category;
+    }
+
+    if (req.query.isPinned !== undefined) {
+      const pinned = parsePinnedValue(req.query.isPinned);
+
+      if (pinned === null) {
+        return sendError(res, 400, "isPinned must be true or false");
+      }
+
+      filter.isPinned = pinned;
+    }
+
+    const notes = await Note.find(filter).sort({ createdAt: -1 });
+
+    return sendSuccess(res, 200, "Notes fetched successfully", notes, {
+      count: notes.length,
+    });
+  } catch (error) {
+    return handleServerError(res, error);
+  }
+};
+
 module.exports = {
   createNote,
   createBulkNotes,
@@ -388,4 +420,5 @@ module.exports = {
   getNotesByCategory,
   getNotesByStatus,
   getNoteSummary,
+  filterNotes,
 };
