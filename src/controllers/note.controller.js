@@ -1,0 +1,76 @@
+const Note = require("../models/note.model");
+
+const ALLOWED_CATEGORIES = ["work", "personal", "study"];
+
+const sendSuccess = (res, statusCode, message, data, extra = {}) => {
+  return res.status(statusCode).json({
+    success: true,
+    message,
+    ...extra,
+    data,
+  });
+};
+
+const sendError = (res, statusCode, message) => {
+  return res.status(statusCode).json({
+    success: false,
+    message,
+    data: null,
+  });
+};
+
+const handleServerError = (res, error) => {
+  console.error(error);
+  return sendError(res, 500, "Internal server error");
+};
+
+const getSanitizedText = (value) => {
+  return typeof value === "string" ? value.trim() : "";
+};
+
+const validateRequiredNoteFields = (title, content, res) => {
+  if (!getSanitizedText(title) || !getSanitizedText(content)) {
+    sendError(res, 400, "Title and content are required");
+    return false;
+  }
+
+  return true;
+};
+
+const validateOptionalCategory = (category, res) => {
+  if (category !== undefined && !ALLOWED_CATEGORIES.includes(category)) {
+    sendError(res, 400, "Invalid category. Allowed: work, personal, study");
+    return false;
+  }
+
+  return true;
+};
+
+const createNote = async (req, res) => {
+  try {
+    const { title, content, category = "personal", isPinned = false } = req.body;
+
+    if (!validateRequiredNoteFields(title, content, res)) {
+      return;
+    }
+
+    if (!validateOptionalCategory(category, res)) {
+      return;
+    }
+
+    const note = await Note.create({
+      title: getSanitizedText(title),
+      content: getSanitizedText(content),
+      category,
+      isPinned,
+    });
+
+    return sendSuccess(res, 201, "Note created successfully", note);
+  } catch (error) {
+    return handleServerError(res, error);
+  }
+};
+
+module.exports = {
+  createNote,
+};
