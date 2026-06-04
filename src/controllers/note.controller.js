@@ -71,6 +71,52 @@ const createNote = async (req, res) => {
   }
 };
 
+const createBulkNotes = async (req, res) => {
+  try {
+    const { notes } = req.body;
+
+    if (!Array.isArray(notes) || notes.length === 0) {
+      return sendError(res, 400, "notes array is required and cannot be empty");
+    }
+
+    const preparedNotes = [];
+
+    for (const note of notes) {
+      const title = getSanitizedText(note.title);
+      const content = getSanitizedText(note.content);
+      const category = note.category ?? "personal";
+      const isPinned = note.isPinned ?? false;
+
+      if (!title || !content) {
+        return sendError(res, 400, "Each note must include title and content");
+      }
+
+      if (!validateOptionalCategory(category, res)) {
+        return;
+      }
+
+      preparedNotes.push({
+        title,
+        content,
+        category,
+        isPinned,
+      });
+    }
+
+    const createdNotes = await Note.insertMany(preparedNotes);
+
+    return sendSuccess(
+      res,
+      201,
+      `${createdNotes.length} notes created successfully`,
+      createdNotes
+    );
+  } catch (error) {
+    return handleServerError(res, error);
+  }
+};
+
 module.exports = {
   createNote,
+  createBulkNotes,
 };
