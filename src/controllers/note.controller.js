@@ -49,6 +49,18 @@ const validateOptionalCategory = (category, res) => {
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
+const parsePinnedValue = (value) => {
+  if (value === "true") {
+    return true;
+  }
+
+  if (value === "false") {
+    return false;
+  }
+
+  return null;
+};
+
 const createNote = async (req, res) => {
   try {
     const { title, content, category = "personal", isPinned = false } = req.body;
@@ -323,6 +335,27 @@ const getNotesByCategory = async (req, res) => {
   }
 };
 
+const getNotesByStatus = async (req, res) => {
+  try {
+    const pinned = parsePinnedValue(req.params.isPinned);
+
+    if (pinned === null) {
+      return sendError(res, 400, "isPinned must be true or false");
+    }
+
+    const notes = await Note.find({ isPinned: pinned }).sort({ createdAt: -1 });
+    const message = pinned
+      ? "Fetched all pinned notes"
+      : "Fetched all unpinned notes";
+
+    return sendSuccess(res, 200, message, notes, {
+      count: notes.length,
+    });
+  } catch (error) {
+    return handleServerError(res, error);
+  }
+};
+
 module.exports = {
   createNote,
   createBulkNotes,
@@ -333,4 +366,5 @@ module.exports = {
   deleteNote,
   deleteBulkNotes,
   getNotesByCategory,
+  getNotesByStatus,
 };
