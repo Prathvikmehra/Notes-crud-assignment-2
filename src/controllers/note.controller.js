@@ -61,6 +61,11 @@ const parsePinnedValue = (value) => {
   return null;
 };
 
+const validateDate = (value) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
 const createNote = async (req, res) => {
   try {
     const { title, content, category = "personal", isPinned = false } = req.body;
@@ -456,6 +461,43 @@ const filterByCategory = async (req, res) => {
   }
 };
 
+const filterByDateRange = async (req, res) => {
+  try {
+    const { from, to } = req.query;
+
+    if (!from || !to) {
+      return sendError(res, 400, "Both 'from' and 'to' query params are required");
+    }
+
+    const fromDate = validateDate(from);
+    const toDate = validateDate(to);
+
+    if (!fromDate || !toDate) {
+      return sendError(res, 400, "Invalid date range");
+    }
+
+    fromDate.setHours(0, 0, 0, 0);
+    toDate.setHours(23, 59, 59, 999);
+
+    const notes = await Note.find({
+      createdAt: {
+        $gte: fromDate,
+        $lte: toDate,
+      },
+    }).sort({ createdAt: -1 });
+
+    return sendSuccess(
+      res,
+      200,
+      `Notes fetched between ${from} and ${to}`,
+      notes,
+      { count: notes.length }
+    );
+  } catch (error) {
+    return handleServerError(res, error);
+  }
+};
+
 module.exports = {
   createNote,
   createBulkNotes,
@@ -471,4 +513,5 @@ module.exports = {
   filterNotes,
   getPinnedNotes,
   filterByCategory,
+  filterByDateRange,
 };
