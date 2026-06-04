@@ -66,6 +66,29 @@ const validateDate = (value) => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
+const normalizePaginationValue = (value, fallback) => {
+  const parsedValue = Number.parseInt(value, 10);
+
+  if (Number.isNaN(parsedValue) || parsedValue <= 0) {
+    return fallback;
+  }
+
+  return parsedValue;
+};
+
+const buildPagination = (total, page, limit) => {
+  const totalPages = Math.ceil(total / limit) || 1;
+
+  return {
+    total,
+    page,
+    limit,
+    totalPages,
+    hasNextPage: page < totalPages,
+    hasPrevPage: page > 1,
+  };
+};
+
 const createNote = async (req, res) => {
   try {
     const { title, content, category = "personal", isPinned = false } = req.body;
@@ -498,6 +521,25 @@ const filterByDateRange = async (req, res) => {
   }
 };
 
+const paginateNotes = async (req, res) => {
+  try {
+    const page = normalizePaginationValue(req.query.page, 1);
+    const limit = normalizePaginationValue(req.query.limit, 10);
+    const skip = (page - 1) * limit;
+    const total = await Note.countDocuments();
+    const notes = await Note.find()
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    return sendSuccess(res, 200, "Notes fetched successfully", notes, {
+      pagination: buildPagination(total, page, limit),
+    });
+  } catch (error) {
+    return handleServerError(res, error);
+  }
+};
+
 module.exports = {
   createNote,
   createBulkNotes,
@@ -514,4 +556,5 @@ module.exports = {
   getPinnedNotes,
   filterByCategory,
   filterByDateRange,
+  paginateNotes,
 };
