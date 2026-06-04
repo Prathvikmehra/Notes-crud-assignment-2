@@ -297,6 +297,32 @@ const deleteBulkNotes = async (req, res) => {
   }
 };
 
+const getNotesByCategory = async (req, res) => {
+  try {
+    const { category } = req.params;
+
+    if (!validateOptionalCategory(category, res)) {
+      return;
+    }
+
+    const notes = await Note.find({ category }).sort({ createdAt: -1 });
+
+    if (notes.length === 0) {
+      return sendError(res, 404, `No notes found for category: ${category}`);
+    }
+
+    return sendSuccess(
+      res,
+      200,
+      `Notes fetched for category: ${category}`,
+      notes,
+      { count: notes.length }
+    );
+  } catch (error) {
+    return handleServerError(res, error);
+  }
+};
+
 module.exports = {
   createNote,
   createBulkNotes,
@@ -306,4 +332,5 @@ module.exports = {
   updateNote,
   deleteNote,
   deleteBulkNotes,
+  getNotesByCategory,
 };
